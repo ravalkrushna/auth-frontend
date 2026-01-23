@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { signup } from "../api/auth";
+import { useNavigate } from "react-router-dom";
+import Modal from "../components/Modal";
 
 function Register() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSignup = async () => {
-    setMessage("");
     setError("");
     setLoading(true);
 
     try {
-      const responseMessage = await signup({ email, password });
-      setMessage(responseMessage);
+      await signup({ email, password });
+      setShowSuccessModal(true); 
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -28,47 +31,59 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pink-100">
-      <div className="bg-white p-6 rounded shadow-md w-80">
-        <h2 className="text-xl font-semibold mb-4 text-center">Sign Up</h2>
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-pink-100 px-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+            Sign Up
+          </h2>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-3 px-3 py-2 border rounded"
-        />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-4 px-3 py-2 border rounded"
-        />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full mb-6 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
 
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-60"
-        >
-          {loading ? "Signing up..." : "Sign Up"}
-        </button>
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full bg-pink-600 text-white py-2 rounded-md font-medium hover:bg-pink-700 transition disabled:opacity-60"
+          >
+            {loading ? "Signing up..." : "Sign Up"}
+          </button>
 
-        {message && (
-          <p className="text-sm text-center text-green-600 mt-3">
-            {message}
-          </p>
-        )}
-
-        {error && (
-          <p className="text-sm text-center text-red-600 mt-3">
-            {error}
-          </p>
-        )}
+          {error && (
+            <p className="text-sm text-center text-red-600 mt-4">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+
+      {showSuccessModal && (
+        <Modal
+          title="OTP Sent"
+          message="We’ve sent an OTP to your email. Please verify your account to continue."
+          buttonText="Verify OTP"
+          onClose={() => {
+            setShowSuccessModal(false);
+            navigate("/verifyotp", {
+              state: { email }, 
+            });
+          }}
+        />
+      )}
+    </>
   );
 }
 
