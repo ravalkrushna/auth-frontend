@@ -4,35 +4,35 @@ import { login } from "../api/auth";
 
 function Login() {
 
-    const [email , setEmail] = useState<string>("");
-    const [password , setPassword] = useState<string>("");
-    const [error , setError] = useState<string>("");
-    const [loading , setLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const handleLogin = async () => {
-        setError("");
-        setLoading(true);
+  const handleLogin = async () => {
+    setError("");
+    setLoading(true);
 
-        try{
-            const res = await login({email , password});
+    try {
+      const res = await login({ email, password });
 
-            localStorage.setItem("token" , res.token);
-            navigate("/dashboard");
-        } catch (err){
-            if (err instanceof Error){
-                setError(err.message);
-            } else {
-                setError("Something went wrong, Login Attempt Failed");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+      localStorage.setItem("token", res.token);
+      navigate("/dashboard");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong, Login Attempt Failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-<div className="min-h-screen flex items-center justify-center bg-teal-200">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-teal-200">
       <div className="bg-white p-6 rounded shadow-md w-80">
         <h2 className="text-xl font-semibold mb-4 text-center">Login</h2>
 
