@@ -28,7 +28,7 @@ export default function ChangePassword() {
     try {
       setLoading(true);
       await changePassword({ oldPassword, newPassword });
-      alert("Password updated ✅");
+      alert("Password updated ");
       navigate("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Change password failed");
