@@ -38,7 +38,7 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-sky-100 to-purple-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-indigo-100 via-sky-100 to-purple-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white/80 backdrop-blur-lg border border-white shadow-xl rounded-2xl p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Change Password</h1>
