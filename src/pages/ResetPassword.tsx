@@ -36,7 +36,7 @@ export default function ResetPassword() {
       setLoading(true);
       await resetPassword({ email, otp, newPassword });
 
-      alert("Password reset successful ✅");
+      alert("Password reset successful ");
       sessionStorage.removeItem("resetEmail");
       navigate("/login");
     } catch (err: unknown) {
