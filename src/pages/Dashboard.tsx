@@ -26,12 +26,21 @@ function Dashboard() {
             </p>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="text-sm bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/changepassword")}
+              className="text-sm bg-yellow-500 text-black px-4 py-2 rounded-md hover:bg-yellow-600 transition"
+            >
+              Change Password
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="text-sm bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -53,7 +62,7 @@ function Dashboard() {
 
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold text-gray-700">Security</h3>
-            <p className="text-gray-500 mt-2">JWT Auth Enabled </p>
+            <p className="text-gray-500 mt-2">JWT Auth Enabled {token}</p>
           </div>
         </div>
       </main>

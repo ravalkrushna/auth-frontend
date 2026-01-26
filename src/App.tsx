@@ -4,6 +4,10 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import VerifyOtp from "./pages/VerifyOtp";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 
 function App() {
   return (
@@ -20,6 +24,17 @@ function App() {
       />
       <Route path="/verifyotp" element={<VerifyOtp />} />
       <Route path="*" element={<Register />} />
+      <Route
+        path="/changepassword"
+        element={
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/forgotpassword" element={<ForgotPassword />} />
+      <Route path="/resetpassword" element={<ResetPassword />} />
+
     </Routes>
   );
 }

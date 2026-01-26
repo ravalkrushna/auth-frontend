@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 
 function Login() {
-
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -60,6 +59,14 @@ function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
+        <button
+          type="button"
+          onClick={() => navigate("/forgotpassword")}
+          className="text-sm text-blue-400 hover:underline text-right w-full"
+        >
+          Forgot Password?
+        </button>
+
         <p className="text-sm text-center text-gray-600 mt-4">
           Don’t have an account?{" "}
           <button
@@ -71,11 +78,8 @@ function Login() {
           </button>
         </p>
 
-
         {error && (
-          <p className="text-sm text-center text-red-600 mt-3">
-            {error}
-          </p>
+          <p className="text-sm text-center text-red-600 mt-3">{error}</p>
         )}
       </div>
     </div>

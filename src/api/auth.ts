@@ -71,3 +71,78 @@ export async function login(data: loginRequest): Promise<loginResponse> {
   }
   return response.json();
 }
+
+type ChangePasswordRequest = {
+  oldPassword: string;
+  newPassword: string;
+};
+
+export async function changePassword(data: ChangePasswordRequest): Promise<string> {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Token missing. Please login again.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/users/auth/changepassword`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text || `Change password failed (${response.status})`);
+  }
+
+  return text;
+}
+
+type ForgotPasswordRequest = {
+  email: string;
+};
+
+export async function sendForgotOtp(data: ForgotPasswordRequest): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/users/auth/forgotpassword`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to send OTP");
+  }
+
+  return response.text();
+}
+
+
+type ResetPasswordRequest = {
+  email: string;
+  otp: string;
+  newPassword: string;
+};
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/users/auth/resetpassword`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Reset password failed");
+  }
+
+  return response.text();
+}
