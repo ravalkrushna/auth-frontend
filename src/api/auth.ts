@@ -16,7 +16,7 @@ export async function signup(data: SignupRequest): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText);
+    throw new Error(errorText || "Signup failed");
   }
 
   return response.text();

@@ -9,26 +9,36 @@ function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showAlreadyUserModal, setShowAlreadyUserModal] = useState(false);
+
 
   const navigate = useNavigate();
 
   const handleSignup = async () => {
+    if (!email || !password) {
+      setError("Email and password are required");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
       await signup({ email, password });
-      setShowSuccessModal(true); 
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      setShowSuccessModal(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+
+      if (message.toLowerCase().includes("already")) {
+        setShowAlreadyUserModal(true);
       } else {
-        setError("Something went wrong");
+        setError(message);
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <>
@@ -62,6 +72,18 @@ function Register() {
             {loading ? "Signing up..." : "Sign Up"}
           </button>
 
+          <p className="text-sm text-center text-gray-600 mt-4">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="text-pink-700 font-medium hover:underline"
+            >
+              Login
+            </button>
+          </p>
+
+
           {error && (
             <p className="text-sm text-center text-red-600 mt-4">
               {error}
@@ -69,6 +91,19 @@ function Register() {
           )}
         </div>
       </div>
+
+      {showAlreadyUserModal && (
+        <Modal
+          title="Account already exists"
+          message="This email is already registered. Please login to continue."
+          buttonText="Go to Login"
+          onClose={() => {
+            setShowAlreadyUserModal(false);
+            navigate("/login");
+          }}
+        />
+      )}
+
 
       {showSuccessModal && (
         <Modal
@@ -78,7 +113,7 @@ function Register() {
           onClose={() => {
             setShowSuccessModal(false);
             navigate("/verifyotp", {
-              state: { email }, 
+              state: { email },
             });
           }}
         />
