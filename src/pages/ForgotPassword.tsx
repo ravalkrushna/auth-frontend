@@ -1,36 +1,45 @@
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import z from "zod";
 import { sendForgotOtp } from "../api/auth";
 
-export default function ForgetPassword() {
+const forgotPasswordSchema = z.object({
+  email: z.string().min(1,"please enter email").email("enter a vaid email"),
+});
+
+type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
+
+
+function ForgotPassword() {
+
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const {register, handleSubmit, getValues, formState: {errors}, } = useForm<ForgotPasswordForm>({
+    resolver: zodResolver(forgotPasswordSchema), defaultValues: {
+      email: "",
+    },
+  });
+  
+  const sendOtpMutation = useMutation({
+    mutationFn: sendForgotOtp,
+      onSuccess: () => {
+        const email = getValues("email");
+        sessionStorage.setItem("resetEmail", email);
+        alert("OTP sent to your email");
+        navigate("/resetpassword" , {replace: true});
+      },
+      onError: (err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "Sending OTP failed";
+            
+        alert(message);
+      }
+  });
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email.trim()) {
-      setError("Email is required");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await sendForgotOtp({ email });
-
-      sessionStorage.setItem("resetEmail", email);
-
-      alert("OTP sent to your email");
-      navigate("/resetpassword");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onSubmit = (data: ForgotPasswordForm) => {
+    sendOtpMutation.mutate(data);
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-sky-100 via-indigo-100 to-purple-100 flex items-center justify-center px-4">
@@ -42,30 +51,29 @@ export default function ForgetPassword() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSendOtp} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
               placeholder="example@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register("email")}
               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition"
             />
+
+            {errors.email && (
+              <p className="text-sm text-red-600 mt-2">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={sendOtpMutation.isPending}
             className="w-full rounded-xl bg-indigo-600 text-white font-semibold py-3 shadow-md hover:bg-indigo-700 active:scale-[0.99] transition disabled:opacity-60"
           >
-            {loading ? "Sending..." : "Send OTP"}
+            {sendOtpMutation.isPending ? "Sending..." : "Send OTP"}
           </button>
 
           <button
@@ -80,3 +88,6 @@ export default function ForgetPassword() {
     </div>
   );
 }
+
+
+export default ForgotPassword;

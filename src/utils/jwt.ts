@@ -1,9 +1,14 @@
-export function getEmailFromToken(token:string): string | null {
-    try{
-        const payload = token.split(".")[1];
-        const decoded = JSON.parse(atob(payload));
-        return decoded?.sub || null;
-    }catch {
-        return null;
-    }
-}
+export const getEmailFromToken = (token: string): string | null => {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null; 
+
+    const payload = parts[1];
+    const decodedPayload = JSON.parse(atob(payload));
+
+    return decodedPayload?.sub || decodedPayload?.email || null;
+  } catch (err) {
+    console.error(" Invalid JWT token:", err);
+    return null;
+  }
+};

@@ -1,49 +1,72 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { resetPassword } from "../api/auth";
 
-export default function ResetPassword() {
-  const navigate = useNavigate();
+const resetPasswordSchema = z.object({
+    otp: z
+      .string()
+      .min(1, "OTP is required")
+      .length(6, "OTP must be exactly 6 digits")
+      .regex(/^\d+$/, "OTP must contain only digits"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
+type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
+
+function ResetPassword() {
+  const navigate = useNavigate();
   const email = sessionStorage.getItem("resetEmail") || "";
 
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<ResetPasswordForm>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      otp: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
 
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const resetMutation = useMutation({
+    mutationFn: (data: ResetPasswordForm) => {
+      if (!email) {
+        throw new Error("Email missing. Please start Forgot Password again.");
+      }
 
-    if (!email) {
-      setError("Email missing. Please start Forgot Password again.");
-      return;
-    }
-
-    if (!otp || !newPassword || !confirmPassword) {
-      setError("All fields are required");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await resetPassword({ email, otp, newPassword });
-
+      return resetPassword({
+        email,
+        otp: data.otp,
+        newPassword: data.newPassword,
+      });
+    },
+    onSuccess: () => {
       alert("Password reset successful ");
       sessionStorage.removeItem("resetEmail");
-      navigate("/login");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Reset failed");
-    } finally {
-      setLoading(false);
-    }
+      navigate("/login", { replace: true });
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : "Reset failed";
+
+      setError("otp", { type: "manual", message });
+    },
+  });
+
+  const onSubmit = (data: ResetPasswordForm) => {
+    resetMutation.mutate(data);
   };
 
   return (
@@ -56,13 +79,13 @@ export default function ResetPassword() {
           </p>
         </div>
 
-        {error && (
+        {!email && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm">
-            {error}
+            Email missing. Please start Forgot Password again.
           </div>
         )}
 
-        <form onSubmit={handleReset} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">Email</label>
             <input
@@ -77,11 +100,15 @@ export default function ResetPassword() {
             <label className="text-sm font-medium text-gray-700">OTP</label>
             <input
               type="text"
+              inputMode="numeric"
+              maxLength={6}
               placeholder="Enter OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              {...register("otp")}
               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition"
             />
+            {errors.otp && (
+              <p className="text-sm text-red-600 mt-2">{errors.otp.message}</p>
+            )}
           </div>
 
           <div>
@@ -91,10 +118,14 @@ export default function ResetPassword() {
             <input
               type="password"
               placeholder="Enter new password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              {...register("newPassword")}
               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition"
             />
+            {errors.newPassword && (
+              <p className="text-sm text-red-600 mt-2">
+                {errors.newPassword.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -104,18 +135,22 @@ export default function ResetPassword() {
             <input
               type="password"
               placeholder="Confirm password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              {...register("confirmPassword")}
               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition"
             />
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-600 mt-2">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={resetMutation.isPending || !email}
             className="w-full rounded-xl bg-green-600 text-white font-semibold py-3 shadow-md hover:bg-green-700 active:scale-[0.99] transition disabled:opacity-60"
           >
-            {loading ? "Updating..." : "Update Password"}
+            {resetMutation.isPending ? "Updating..." : "Update Password"}
           </button>
 
           <button
@@ -130,3 +165,5 @@ export default function ResetPassword() {
     </div>
   );
 }
+
+export default ResetPassword;

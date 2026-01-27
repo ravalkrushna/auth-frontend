@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -8,12 +9,18 @@ import ChangePassword from "./pages/ChangePassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Register />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verifyotp" element={<VerifyOtp />} />
+
+      <Route path="/forgotpassword" element={<ForgotPassword />} />
+      <Route path="/resetpassword" element={<ResetPassword />} />
+
       <Route
         path="/dashboard"
         element={
@@ -22,8 +29,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/verifyotp" element={<VerifyOtp />} />
-      <Route path="*" element={<Register />} />
+
       <Route
         path="/changepassword"
         element={
@@ -32,9 +38,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/forgotpassword" element={<ForgotPassword />} />
-      <Route path="/resetpassword" element={<ResetPassword />} />
 
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

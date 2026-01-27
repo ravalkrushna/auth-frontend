@@ -1,16 +1,32 @@
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { getEmailFromToken } from "../utils/jwt";
+import { logout } from "../api/auth";
 
 function Dashboard() {
+
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
   const userEmail = token ? getEmailFromToken(token) : null;
 
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSettled: () => {
+      localStorage.removeItem("token");
+      navigate("/login");
+    }
+  });
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+  logoutMutation.mutate();
+
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -20,9 +36,7 @@ function Dashboard() {
             <h1 className="text-xl font-semibold text-gray-800">Auth Learning</h1>
             <p className="text-sm text-gray-600">
               Logged in as:{" "}
-              <span className="font-medium">
-                {userEmail || "Unknown User"}
-              </span>
+              <span className="font-medium">{userEmail || "Unknown User"}</span>
             </p>
           </div>
 
@@ -36,9 +50,10 @@ function Dashboard() {
 
             <button
               onClick={handleLogout}
-              className="text-sm bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+              disabled={logoutMutation.isPending}
+              className="text-sm bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition disabled:opacity-60"
             >
-              Logout
+              {logoutMutation.isPending ? "Logging out..." : "Logout"}
             </button>
           </div>
         </div>
@@ -57,12 +72,17 @@ function Dashboard() {
 
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold text-gray-700">Login Status</h3>
-            <p className="text-gray-500 mt-2">You are logged in as {userEmail}</p>
+            <p className="text-gray-500 mt-2">
+              {userEmail ? `You are logged in as ${userEmail}` : "Not logged in"}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold text-gray-700">Security</h3>
-            <p className="text-gray-500 mt-2">JWT Auth Enabled {token}</p>
+            <p className="text-gray-500 mt-2">
+              JWT Auth Enabled: <span className="font-medium">{token ? "YES " : "NO "}</span>
+            </p>
+
           </div>
         </div>
       </main>

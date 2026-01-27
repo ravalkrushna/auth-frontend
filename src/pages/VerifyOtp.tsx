@@ -1,50 +1,66 @@
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Modal from "../components/Modal";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { verifyOtp } from "../api/auth";
+
+const otpSchema = z.object({
+  otp: z
+    .string()
+    .min(1, "OTP is required")
+    .length(6, "OTP must be 6 digits")
+    .regex(/^\d+$/, "OTP must be numeric"),
+});
+
+type OtpForm = z.infer<typeof otpSchema>;
 
 function VerifyOtp() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const emailFromState = (location.state as { email?: string })?.email || "";
+  const email = (location.state as { email?: string })?.email || "";
 
-  const email = emailFromState;
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<OtpForm>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: "" },
+  });
 
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const verifyOtpMutation = useMutation({
+    mutationFn: async (data: OtpForm) => {
+      if (!email) throw new Error("Email missing, please signup again");
+      return verifyOtp({ email, otp: data.otp.trim() });
+    },
+    onSuccess: () => {
+      navigate("/login", { replace: true });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "OTP verification failed. Invalid OTP!";
 
-  const handleVerifyOtp = async () => {
-    setError("");
-    setLoading(true);
+      setError("otp", { type: "manual", message });
+    },
+  });
 
-    try {
-      await verifyOtp({ email, otp });
-      setShowSuccessModal(true);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Invalid OTP");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onSubmit = (data: OtpForm) => verifyOtpMutation.mutate(data);
 
   return (
-    <>
-      <div className="min-h-screen flex items-center justify-center bg-indigo-100 px-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Verify OTP
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-indigo-100 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Verify OTP
+        </h2>
 
+        <form onSubmit={handleSubmit(onSubmit)}>
           <input
             type="email"
-            placeholder="Email"
             value={email}
             disabled
             className="w-full mb-4 px-4 py-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
@@ -52,38 +68,35 @@ function VerifyOtp() {
 
           <input
             type="text"
+            inputMode="numeric"
+            maxLength={6}
             placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            className="w-full mb-6 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            {...register("otp")}
+            className="w-full mb-2 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
 
+          {errors.otp && (
+            <p className="text-sm text-center text-red-600 mb-4">
+              {errors.otp.message}
+            </p>
+          )}
+
           <button
-            onClick={handleVerifyOtp}
-            disabled={loading}
+            type="submit"
+            disabled={verifyOtpMutation.isPending || !email}
             className="w-full bg-indigo-600 text-white py-2 rounded-md font-medium hover:bg-indigo-700 transition disabled:opacity-60"
           >
-            {loading ? "Verifying..." : "Verify OTP"}
+            {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
           </button>
+        </form>
 
-          {error && (
-            <p className="text-sm text-center text-red-600 mt-4">{error}</p>
-          )}
-        </div>
+        {!email && (
+          <p className="text-sm text-center text-red-600 mt-4">
+            Email missing. Please signup again.
+          </p>
+        )}
       </div>
-
-      {showSuccessModal && (
-        <Modal
-          title="Account Verified"
-          message="Your account has been successfully verified. You can now log in."
-          buttonText="Go to Login"
-          onClose={() => {
-            setShowSuccessModal(false);
-            navigate("/login");
-          }}
-        />
-      )}
-    </>
+    </div>
   );
 }
 

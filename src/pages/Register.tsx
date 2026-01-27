@@ -1,124 +1,108 @@
-import { useState } from "react";
-import { signup } from "../api/auth";
 import { useNavigate } from "react-router-dom";
-import Modal from "../components/Modal";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { signup } from "../api/auth";
+
+const registerSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type RegisterForm = z.infer<typeof registerSchema>;
 
 function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showAlreadyUserModal, setShowAlreadyUserModal] = useState(false);
-
-
   const navigate = useNavigate();
 
-  const handleSignup = async () => {
-    if (!email || !password) {
-      setError("Email and password are required");
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+  });
 
-    setError("");
-    setLoading(true);
+  const signupMutation = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      const email = getValues("email");
+      navigate("/verifyotp", { state: { email } });
+    },
+  });
 
-    try {
-      await signup({ email, password });
-      setShowSuccessModal(true);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-
-      if (message.toLowerCase().includes("already")) {
-        setShowAlreadyUserModal(true);
-      } else {
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data: RegisterForm) => {
+    signupMutation.mutate({
+      email: data.email,
+      password: data.password,
+    });
   };
 
+  const errorMessage =
+    signupMutation.error instanceof Error ? signupMutation.error.message : "";
 
   return (
-    <>
-      <div className="min-h-screen flex items-center justify-center bg-pink-100 px-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Sign Up
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-pink-100 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Sign Up
+        </h2>
 
+        <form onSubmit={handleSubmit(onSubmit)}>
           <input
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+            {...register("email")}
+            className="w-full mb-2 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
+          {errors.email && (
+            <p className="text-sm text-red-600 mb-3">
+              {errors.email.message}
+            </p>
+          )}
 
           <input
             type="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full mb-6 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+            {...register("password")}
+            className="w-full mb-2 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
-
-          <button
-            onClick={handleSignup}
-            disabled={loading}
-            className="w-full bg-pink-600 text-white py-2 rounded-md font-medium hover:bg-pink-700 transition disabled:opacity-60"
-          >
-            {loading ? "Signing up..." : "Sign Up"}
-          </button>
-
-          <p className="text-sm text-center text-gray-600 mt-4">
-            Already have an account?{" "}
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="text-pink-700 font-medium hover:underline"
-            >
-              Login
-            </button>
-          </p>
-
-
-          {error && (
-            <p className="text-sm text-center text-red-600 mt-4">
-              {error}
+          {errors.password && (
+            <p className="text-sm text-red-600 mb-4">
+              {errors.password.message}
             </p>
           )}
-        </div>
+
+          <button
+            type="submit"
+            disabled={signupMutation.isPending}
+            className="w-full bg-pink-600 text-white py-2 rounded-md font-medium hover:bg-pink-700 transition disabled:opacity-60"
+          >
+            {signupMutation.isPending ? "Signing up..." : "Sign Up"}
+          </button>
+        </form>
+
+        <p className="text-sm text-center text-gray-600 mt-4">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="text-pink-700 font-medium hover:underline"
+          >
+            Login
+          </button>
+        </p>
+
+        {errorMessage && (
+          <p className="text-sm text-center text-red-600 mt-4">
+            {errorMessage}
+          </p>
+        )}
       </div>
-
-      {showAlreadyUserModal && (
-        <Modal
-          title="Account already exists"
-          message="This email is already registered. Please login to continue."
-          buttonText="Go to Login"
-          onClose={() => {
-            setShowAlreadyUserModal(false);
-            navigate("/login");
-          }}
-        />
-      )}
-
-
-      {showSuccessModal && (
-        <Modal
-          title="OTP Sent"
-          message="We’ve sent an OTP to your email. Please verify your account to continue."
-          buttonText="Verify OTP"
-          onClose={() => {
-            setShowSuccessModal(false);
-            navigate("/verifyotp", {
-              state: { email },
-            });
-          }}
-        />
-      )}
-    </>
+    </div>
   );
 }
 
