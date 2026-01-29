@@ -1,9 +1,26 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { verifyOtp } from "../api/auth";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import type { ControllerRenderProps } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 const otpSchema = z.object({
   otp: z
@@ -21,14 +38,10 @@ function VerifyOtp() {
 
   const email = (location.state as { email?: string })?.email || "";
 
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<OtpForm>({
+  const form = useForm<OtpForm>({
     resolver: zodResolver(otpSchema),
     defaultValues: { otp: "" },
+    mode: "onTouched",
   });
 
   const verifyOtpMutation = useMutation({
@@ -45,7 +58,7 @@ function VerifyOtp() {
           ? err.message
           : "OTP verification failed. Invalid OTP!";
 
-      setError("otp", { type: "manual", message });
+      form.setError("otp", { type: "manual", message });
     },
   });
 
@@ -53,49 +66,68 @@ function VerifyOtp() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-indigo-100 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          Verify OTP
-        </h2>
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            Verify OTP
+          </CardTitle>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <input
-            type="email"
-            value={email}
-            disabled
-            className="w-full mb-4 px-4 py-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
-          />
-
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="Enter OTP"
-            {...register("otp")}
-            className="w-full mb-2 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          {errors.otp && (
-            <p className="text-sm text-center text-red-600 mb-4">
-              {errors.otp.message}
-            </p>
+        <CardContent className="space-y-4">
+          {/* Email missing warning */}
+          {!email && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Email missing. Please signup again.
+              </AlertDescription>
+            </Alert>
           )}
 
-          <button
-            type="submit"
-            disabled={verifyOtpMutation.isPending || !email}
-            className="w-full bg-indigo-600 text-white py-2 rounded-md font-medium hover:bg-indigo-700 transition disabled:opacity-60"
-          >
-            {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
-          </button>
-        </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Email (disabled) */}
+              <div className="space-y-2">
+                <FormLabel>Email</FormLabel>
+                <Input value={email} disabled />
+              </div>
 
-        {!email && (
-          <p className="text-sm text-center text-red-600 mt-4">
-            Email missing. Please signup again.
-          </p>
-        )}
-      </div>
+              {/* OTP */}
+              <FormField
+                control={form.control}
+                name="otp"
+                render={({
+                  field,
+                }: {
+                  field: ControllerRenderProps<OtpForm, "otp">;
+                }) => (
+                  <FormItem>
+                    <FormLabel>OTP</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter 6-digit OTP"
+                        inputMode="numeric"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={verifyOtpMutation.isPending || !email}
+              >
+                {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

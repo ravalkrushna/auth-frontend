@@ -2,92 +2,145 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import z from "zod";
+import { z } from "zod";
+
 import { sendForgotOtp } from "../api/auth";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import { Mail, ShieldCheck } from "lucide-react";
+
 const forgotPasswordSchema = z.object({
-  email: z.string().min(1,"please enter email").email("enter a vaid email"),
+  email: z.string().min(1, "Please enter email").email("Enter a valid email"),
 });
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
-
 function ForgotPassword() {
-
   const navigate = useNavigate();
-  const {register, handleSubmit, getValues, formState: {errors}, } = useForm<ForgotPasswordForm>({
-    resolver: zodResolver(forgotPasswordSchema), defaultValues: {
+
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm<ForgotPasswordForm>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
       email: "",
     },
+    mode: "onTouched",
   });
-  
+
   const sendOtpMutation = useMutation({
     mutationFn: sendForgotOtp,
-      onSuccess: () => {
-        const email = getValues("email");
-        sessionStorage.setItem("resetEmail", email);
-        alert("OTP sent to your email");
-        navigate("/resetpassword" , {replace: true});
-      },
-      onError: (err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : "Sending OTP failed";
-            
-        alert(message);
-      }
+    onSuccess: () => {
+      const email = getValues("email");
+      sessionStorage.setItem("resetEmail", email);
+      navigate("/resetpassword", { replace: true });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Sending OTP failed";
+      // show under form instead of annoying alert popup
+      console.error(message);
+    },
   });
 
   const onSubmit = (data: ForgotPasswordForm) => {
     sendOtpMutation.mutate(data);
-  }
+  };
+
+  const apiError =
+    sendOtpMutation.error instanceof Error ? sendOtpMutation.error.message : "";
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-sky-100 via-indigo-100 to-purple-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-lg border border-white shadow-xl rounded-2xl p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Forgot Password</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            We’ll send an OTP to your email for verification
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-slate-50 via-indigo-50 to-sky-50">
+      <Card className="w-full max-w-md bg-white/80 backdrop-blur-xl shadow-xl border border-white/60">
+        <CardHeader className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-700">
+              <ShieldCheck size={18} />
+            </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              {...register("email")}
-              className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition"
-            />
-
-            {errors.email && (
-              <p className="text-sm text-red-600 mt-2">
-                {errors.email.message}
+            <div>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Forgot Password
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                We’ll send an OTP to your email for verification
               </p>
-            )}
+            </div>
           </div>
+        </CardHeader>
 
-          <button
-            type="submit"
-            disabled={sendOtpMutation.isPending}
-            className="w-full rounded-xl bg-indigo-600 text-white font-semibold py-3 shadow-md hover:bg-indigo-700 active:scale-[0.99] transition disabled:opacity-60"
-          >
-            {sendOtpMutation.isPending ? "Sending..." : "Send OTP"}
-          </button>
+        <CardContent className="space-y-4">
+          {/* ✅ API error (soft, not bright) */}
+          {apiError && (
+            <Alert variant="destructive">
+              <AlertDescription>{apiError}</AlertDescription>
+            </Alert>
+          )}
 
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="w-full rounded-xl bg-white border border-gray-200 text-gray-800 font-semibold py-3 shadow-sm hover:bg-gray-50 transition"
-          >
-            Back to Login
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+
+              <div className="relative">
+                <Mail
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@gmail.com"
+                  className="pl-10"
+                  {...register("email")}
+                  disabled={sendOtpMutation.isPending}
+                />
+              </div>
+
+              {errors.email && (
+                <p className="text-sm text-red-600">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={sendOtpMutation.isPending}
+            >
+              {sendOtpMutation.isPending ? "Sending..." : "Send OTP"}
+            </Button>
+
+            {/* Back */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/login")}
+              disabled={sendOtpMutation.isPending}
+            >
+              Back to Login
+            </Button>
+          </form>
+
+          {/* ✅ Soft helper note */}
+          <p className="text-xs text-muted-foreground text-center">
+            Make sure to check your inbox & spam folder.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
 
 export default ForgotPassword;
