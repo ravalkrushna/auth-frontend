@@ -193,7 +193,7 @@ function Dashboard() {
                   Current session state:
                 </p>
                 <p className="font-medium text-[#1f2a1f]">
-                  You are logged in ✅
+                  You are logged in and your session is active. Enjoy your secure experience!
                 </p>
                 <Badge className="w-fit bg-[#3a5a40] text-white">
                   Active Session
